@@ -250,8 +250,10 @@
       <div class="label-sm">Одна адреса</div>
       <div class="field-row">
         <input class="field" id="man-field" placeholder="Via Roma 12, 20100 Milano" type="text" autocomplete="off">
+        <input type="number" id="man-pacchi" value="1" min="1" max="99" style="width:52px;font-size:15px;padding:8px 6px;border:1.5px solid #d1d1d6;border-radius:10px;text-align:center;background:#fff;color:#000;">
         <button class="btn-blue" onclick="addManual()">+</button>
       </div>
+      <div style="font-size:11px;color:#8e8e93;margin-top:-6px;margin-bottom:4px">Адреса · Кількість пакунків · Додати</div>
     </div>
     <div class="card">
       <div class="label-sm">Список (кожна адреса з нового рядка)</div>
@@ -268,6 +270,14 @@
       <div class="stat-card"><div class="stat-label">%</div><div class="stat-value" id="stat-pct">0</div></div>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    <div id="eta-card" style="display:none;background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:12px;display:none;flex-direction:column;gap:2px;">
+      <div style="font-size:11px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:0.04em">Орієнтовний час завершення</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px">
+        <span style="font-size:28px;font-weight:700;color:#000" id="eta-time">—</span>
+        <span style="font-size:13px;color:#8e8e93" id="eta-remaining"></span>
+      </div>
+      <div style="font-size:12px;color:#8e8e93" id="eta-detail"></div>
+    </div>
     <div id="stops-list"></div>
     <div id="empty-route" class="empty-hint">
       <span class="eicon">📦</span>
@@ -406,7 +416,8 @@ async function extractA4(b64) {
           { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
           { type: 'text', text: `Foglio A4 con elenco indirizzi di consegna SDA in Italia. Estrai TUTTI gli indirizzi presenti nel documento.
 Rispondi SOLO con un array JSON valido, senza markdown, senza testo aggiuntivo:
-[{"nome":"Nome Cognome","indirizzo_completo":"Via X N, CAP Città","nota":null}]
+[{"nome":"Nome Cognome","indirizzo_completo":"Via X N, CAP Città","nota":null,"pacchi":1}]
+Se nel documento è indicato il numero di colli/pacchi per ogni indirizzo, estrailo nel campo "pacchi". Altrimenti metti 1.
 Se non riesci a leggere qualcosa, metti stringa vuota. Estrai davvero TUTTI gli indirizzi che vedi.` }
         ]}]
       })
@@ -470,15 +481,27 @@ function renderExtracted() {
   btn.textContent = sc > 0 ? ('Додати ' + sc + ' адрес до маршруту') : 'Вибери адреси';
   document.getElementById('ext-list').innerHTML = extracted.map((item, i) => {
     const s = selected.has(i);
+    const pacchi = item.pacchi || 1;
     return `<div class="ext-item ${s ? 'sel' : ''}" onclick="toggleItem(${i})">
       <div class="ext-check ${s ? 'chk' : ''}">${s ? '✓' : ''}</div>
-      <div>
+      <div style="flex:1">
         <div class="ext-addr">${item.indirizzo_completo || '—'}</div>
-        ${item.nome ? '<div class="ext-name">' + item.nome + '</div>' : ''}
+        ${item.nome ? '<div class="ext-name">👤 ' + item.nome + '</div>' : ''}
         ${item.nota ? '<div class="ext-name" style="color:#e24b4a">📝 ' + item.nota + '</div>' : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
+        <button onclick="changePacchi(${i},-1)" style="width:22px;height:22px;border-radius:50%;border:1px solid #d1d1d6;background:#f2f2f7;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">−</button>
+        <span style="font-size:12px;font-weight:600;min-width:20px;text-align:center">📦${pacchi}</span>
+        <button onclick="changePacchi(${i},+1)" style="width:22px;height:22px;border-radius:50%;border:1px solid #d1d1d6;background:#f2f2f7;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">+</button>
       </div>
     </div>`;
   }).join('');
+}
+
+function changePacchi(i, delta) {
+  if (!extracted[i]) return;
+  extracted[i].pacchi = Math.max(1, (extracted[i].pacchi || 1) + delta);
+  renderExtracted();
 }
 
 function toggleItem(i) {
@@ -503,6 +526,7 @@ function addSelected() {
     const addr = item.indirizzo_completo || '';
     const normAddr = normalizeAddr(addr);
     const person = { name: item.nome || null, nota: item.nota || null };
+    const pacchi = item.pacchi || 1;
     const existing = stops.find(s => normalizeAddr(s.addr) === normAddr && !s.done);
     if (existing) {
       if (!existing.people) {
@@ -510,8 +534,9 @@ function addSelected() {
         existing.name = null;
       }
       existing.people.push(person);
+      existing.pacchi = (existing.pacchi || 1) + pacchi;
     } else {
-      stops.push({ addr, name: item.nome || null, nota: item.nota || null, people: null, done: false });
+      stops.push({ addr, name: item.nome || null, nota: item.nota || null, people: null, pacchi, done: false });
       count++;
     }
   });
@@ -528,8 +553,10 @@ function addManual() {
   const f = document.getElementById('man-field');
   const val = f.value.trim();
   if (!val) return;
-  stops.push({ addr: val, done: false });
+  const pacchi = parseInt(document.getElementById('man-pacchi').value) || 1;
+  stops.push({ addr: val, pacchi, done: false });
   f.value = '';
+  document.getElementById('man-pacchi').value = '1';
   doneBlocks.clear();
   saveToStorage();
   renderStops();
@@ -579,18 +606,26 @@ function confirmClear() {
 
 function peopleHtml(s, small) {
   const fs = small ? '11px' : '12px';
-  if (s.people && s.people.length > 0) {
-    return s.people.map(p =>
-      `<div style="font-size:${fs};color:#8e8e93;margin-top:2px">👤 ${p.name || '—'}${p.nota ? ' · <span style="color:#e24b4a">📝 ' + p.nota + '</span>' : ''}</div>`
-    ).join('');
+  let html = '';
+  if (s.pacchi && s.pacchi > 1) {
+    html += `<div style="font-size:${fs};color:#e24b4a;font-weight:600;margin-top:2px">📦 ${s.pacchi} pacchi</div>`;
+  } else if (s.pacchi === 1) {
+    html += `<div style="font-size:${fs};color:#8e8e93;margin-top:2px">📦 1 pacco</div>`;
   }
-  if (s.name) return `<div style="font-size:${fs};color:#8e8e93;margin-top:2px">👤 ${s.name}${s.nota ? ' · <span style="color:#e24b4a">📝 ' + s.nota + '</span>' : ''}</div>`;
-  return '';
+  if (s.people && s.people.length > 0) {
+    html += s.people.map(p =>
+      `<div style="font-size:${fs};color:#8e8e93;margin-top:1px">👤 ${p.name || '—'}${p.nota ? ' · <span style="color:#e24b4a">📝 ' + p.nota + '</span>' : ''}</div>`
+    ).join('');
+  } else if (s.name) {
+    html += `<div style="font-size:${fs};color:#8e8e93;margin-top:1px">👤 ${s.name}${s.nota ? ' · <span style="color:#e24b4a">📝 ' + s.nota + '</span>' : ''}</div>`;
+  }
+  return html;
 }
 
 function renderStops() {
   const tot = stops.length;
   const don = stops.filter(s => s.done).length;
+  const pending = stops.filter(s => !s.done).length;
   const pct = tot ? Math.round(don / tot * 100) : 0;
   document.getElementById('stat-tot').textContent = tot;
   document.getElementById('stat-don').textContent = don;
@@ -598,6 +633,25 @@ function renderStops() {
   document.getElementById('prog-fill').style.width = pct + '%';
   document.getElementById('empty-route').style.display = tot > 0 ? 'none' : 'block';
   document.getElementById('clear-btn').style.display = tot > 0 ? 'block' : 'none';
+
+  // ETA розрахунок — 5 хвилин на доставку
+  const etaCard = document.getElementById('eta-card');
+  if (pending > 0) {
+    const minutesLeft = pending * 5;
+    const now = new Date();
+    const eta = new Date(now.getTime() + minutesLeft * 60000);
+    const h = eta.getHours().toString().padStart(2, '0');
+    const m = eta.getMinutes().toString().padStart(2, '0');
+    const hours = Math.floor(minutesLeft / 60);
+    const mins = minutesLeft % 60;
+    const remainStr = hours > 0 ? `~${hours}г ${mins}хв залишилось` : `~${mins} хв залишилось`;
+    document.getElementById('eta-time').textContent = h + ':' + m;
+    document.getElementById('eta-remaining').textContent = remainStr;
+    document.getElementById('eta-detail').textContent = `${pending} зупинок × 5 хв`;
+    etaCard.style.display = 'flex';
+  } else {
+    etaCard.style.display = 'none';
+  }
 
   const list = document.getElementById('stops-list');
   list.innerHTML = stops.map((s, i) => `
