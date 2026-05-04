@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SDA Кур'єр">
+<meta name="theme-color" content="#e24b4a">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23e24b4a'/><text y='68' x='50' text-anchor='middle' font-size='58' fill='white'>🚚</text></svg>">
+<title>SDA Кур'єр</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #f2f2f7; min-height: 100vh; }
+  
+  .app { max-width: 430px; margin: 0 auto; background: #f2f2f7; min-height: 100vh; }
+  
+  .header { background: #fff; padding: 14px 16px 12px; border-bottom: 0.5px solid #c6c6c8; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+  .logo { width: 38px; height: 38px; background: #e24b4a; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo svg { width: 22px; height: 22px; fill: white; }
+  .header-text .title { font-size: 17px; font-weight: 600; color: #000; }
+  .header-text .sub { font-size: 12px; color: #8e8e93; margin-top: 1px; }
+  .save-dot { width: 8px; height: 8px; border-radius: 50%; background: #34c759; margin-left: auto; flex-shrink: 0; }
+  .save-dot.saving { background: #ff9500; }
+  .btn-tg { background: #229ED9; border: none; border-radius: 8px; padding: 6px 10px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  .btn-tg:active { opacity: 0.8; }
+  .btn-tg svg { width: 14px; height: 14px; fill: white; }
+
+  .tabs { display: flex; background: #fff; border-bottom: 0.5px solid #c6c6c8; }
+  .tab { flex: 1; padding: 12px 4px 10px; border: none; background: transparent; font-size: 11px; font-weight: 500; color: #8e8e93; cursor: pointer; border-bottom: 2px solid transparent; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .tab-icon { font-size: 18px; }
+  .tab.active { color: #e24b4a; border-bottom-color: #e24b4a; }
+
+  .panel { display: none; padding: 16px; }
+  .panel.active { display: block; }
+
+  .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .label-sm { font-size: 12px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+
+  .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .mode-btn { padding: 14px 10px; border: 1.5px solid #d1d1d6; border-radius: 12px; background: #fff; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .mode-btn.sel { border-color: #007aff; background: #f0f6ff; }
+  .mode-btn .micon { font-size: 26px; margin-bottom: 5px; }
+  .mode-btn .mlabel { font-size: 13px; font-weight: 600; color: #000; }
+  .mode-btn .msub { font-size: 11px; color: #8e8e93; margin-top: 2px; }
+  .mode-btn.sel .mlabel { color: #007aff; }
+
+  .scan-zone { border: 2px dashed #c6c6c8; border-radius: 14px; padding: 28px 16px; text-align: center; cursor: pointer; background: #fafafa; }
+  .scan-zone:active { background: #f0f0f0; border-color: #007aff; }
+  .scan-zone .sicon { font-size: 44px; margin-bottom: 10px; }
+  .scan-hint { font-size: 14px; color: #3c3c43; line-height: 1.5; }
+  .scan-hint strong { font-weight: 600; color: #000; }
+  .scan-hint .tip { font-size: 12px; color: #8e8e93; margin-top: 6px; display: block; }
+  input[type=file] { display: none; }
+
+  .preview-wrap { position: relative; margin-bottom: 14px; }
+  .preview-img { width: 100%; border-radius: 12px; max-height: 220px; object-fit: cover; display: block; }
+  .preview-clear { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; color: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+  .loading-row { display: flex; align-items: center; gap: 12px; padding: 14px; background: #fff; border-radius: 12px; margin-bottom: 12px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid #e5e5ea; border-top-color: #007aff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-txt { font-size: 14px; color: #8e8e93; }
+
+  .found-banner { background: #d1f2d9; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+  .found-n { font-size: 28px; font-weight: 700; color: #1c7a3a; }
+  .found-lbl { font-size: 14px; color: #1c7a3a; font-weight: 500; }
+
+  .sel-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .sel-btn { font-size: 14px; color: #007aff; background: none; border: none; cursor: pointer; font-weight: 500; padding: 4px 0; }
+  .sel-count { font-size: 13px; color: #8e8e93; }
+
+  .ext-list { max-height: 300px; overflow-y: auto; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
+  .ext-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 10px; margin-bottom: 6px; border: 1.5px solid #e5e5ea; background: #fff; cursor: pointer; }
+  .ext-item.sel { border-color: #007aff; background: #f0f6ff; }
+  .ext-check { width: 22px; height: 22px; border: 1.5px solid #c6c6c8; border-radius: 50%; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background: #fff; }
+  .ext-check.chk { background: #007aff; border-color: #007aff; color: #fff; }
+  .ext-addr { font-size: 13px; color: #000; font-weight: 500; }
+  .ext-name { font-size: 12px; color: #8e8e93; margin-top: 2px; }
+
+  .btn-green { width: 100%; padding: 14px; background: #34c759; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
+  .btn-green:active { opacity: 0.85; }
+  .btn-green:disabled { background: #b0b0b0; }
+  .btn-outline { width: 100%; padding: 13px; background: transparent; border: 1.5px solid #c6c6c8; border-radius: 12px; font-size: 15px; cursor: pointer; color: #3c3c43; font-weight: 500; }
+  .btn-outline:active { background: #f0f0f0; }
+  .btn-red-outline { width: 100%; padding: 12px; background: transparent; border: 1.5px solid #ffb3b3; border-radius: 12px; font-size: 14px; cursor: pointer; color: #e24b4a; font-weight: 500; margin-top: 8px; }
+
+  .err-box { background: #fff0f0; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+  .err-label { font-size: 12px; color: #c0392b; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .err-msg { font-size: 13px; color: #633; }
+
+  .field { width: 100%; font-size: 15px; padding: 12px 14px; border: 1.5px solid #d1d1d6; border-radius: 10px; background: #fff; color: #000; -webkit-appearance: none; }
+  .field:focus { outline: none; border-color: #007aff; }
+  .field-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .field-row .field { flex: 1; }
+  .btn-blue { padding: 12px 18px; background: #007aff; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn-blue:active { opacity: 0.85; }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat-card { background: #fff; border-radius: 12px; padding: 12px; text-align: center; }
+  .stat-label { font-size: 11px; color: #8e8e93; margin-bottom: 4px; font-weight: 500; }
+  .stat-value { font-size: 26px; font-weight: 700; color: #000; }
+  .progress-bar { height: 6px; background: #e5e5ea; border-radius: 3px; margin-bottom: 14px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #34c759; border-radius: 3px; transition: width 0.4s; }
+
+  .stop-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: #fff; border-radius: 10px; margin-bottom: 6px; }
+  .stop-num { width: 26px; height: 26px; border-radius: 50%; background: #007aff; color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .stop-num.done-num { background: #34c759; }
+  .stop-info { flex: 1; min-width: 0; }
+  .stop-addr { font-size: 13px; color: #000; font-weight: 500; }
+  .stop-name { font-size: 12px; color: #8e8e93; margin-top: 2px; }
+  .stop-done-btn { background: none; border: 1.5px solid #d1d1d6; border-radius: 8px; font-size: 12px; padding: 4px 10px; cursor: pointer; color: #3c3c43; flex-shrink: 0; font-weight: 500; }
+  .stop-del { background: none; border: none; color: #c6c6c8; cursor: pointer; font-size: 20px; padding: 0 2px; flex-shrink: 0; line-height: 1; }
+
+  .empty-hint { text-align: center; padding: 40px 20px; font-size: 14px; color: #8e8e93; line-height: 1.7; }
+  .empty-hint .eicon { font-size: 42px; margin-bottom: 12px; display: block; }
+
+  /* MAPS BLOCKS */
+  .sort-info { background: #e8f4fd; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; color: #1a5a8a; line-height: 1.6; }
+  .sort-info strong { font-weight: 600; }
+
+  .block-item { background: #fff; border-radius: 14px; margin-bottom: 10px; overflow: hidden; border: 1.5px solid #e5e5ea; }
+  .block-item.done-block { opacity: 0.55; }
+  .block-item.current-block { border-color: #e24b4a; }
+
+  .block-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; }
+  .block-circle { width: 36px; height: 36px; border-radius: 50%; background: #e24b4a; color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .block-circle.done { background: #34c759; }
+  .block-circle.next { background: #007aff; }
+  .block-text { flex: 1; min-width: 0; }
+  .block-title { font-size: 15px; font-weight: 600; color: #000; }
+  .block-sub { font-size: 12px; color: #8e8e93; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .btn-maps { padding: 9px 16px; background: #e24b4a; color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+  .btn-maps:active { opacity: 0.85; }
+  .btn-maps.done { background: #34c759; }
+
+  .block-body { display: none; border-top: 0.5px solid #e5e5ea; }
+  .block-body.open { display: block; }
+  .block-stop-row { display: flex; gap: 8px; padding: 7px 14px; font-size: 13px; color: #3c3c43; border-bottom: 0.5px solid #f2f2f7; }
+  .block-stop-row:last-of-type { border-bottom: none; }
+  .bsnum { color: #8e8e93; min-width: 20px; flex-shrink: 0; }
+  .block-actions { padding: 10px 14px; display: flex; gap: 8px; }
+  .btn-done-block { flex: 1; padding: 10px; background: #f2f2f7; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; color: #3c3c43; }
+  .btn-done-block.active-done { background: #d1f2d9; color: #1c7a3a; }
+  .btn-open-maps { flex: 1; padding: 10px; background: #e24b4a; color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-open-maps:active { opacity: 0.85; }
+
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.78); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 500; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; z-index: 999; backdrop-filter: blur(10px); }
+  .toast.show { opacity: 1; }
+
+  .saved-badge { font-size: 11px; color: #34c759; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zm-.5 1.5L21.96 12H17V9.5h2.5zM6 18c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm13 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>
+    </div>
+    <div class="header-text">
+      <div class="title">SDA Кур'єр</div>
+      <div class="sub" id="date-sub"></div>
+    </div>
+    <div class="save-dot" id="save-dot" title="Збережено"></div>
+    <button id="tg-btn" class="btn-tg" onclick="sendToTelegram()" title="Зберегти в Telegram">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.012 9.478c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L6.26 14.4l-2.95-.924c-.64-.203-.654-.64.136-.948l11.526-4.443c.537-.194 1.006.131.59.163z"/></svg> 💾
+    </button>
+    <button class="btn-tg" style="background:#34c759" onclick="restoreFromTelegram()" title="Відновити з Telegram">🔄</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('scan')">
+      <span class="tab-icon">📋</span>Скан
+    </button>
+    <button class="tab" onclick="switchTab('manual')">
+      <span class="tab-icon">✏️</span>Вручну
+    </button>
+    <button class="tab" onclick="switchTab('route')">
+      <span class="tab-icon">📦</span>Список
+    </button>
+    <button class="tab" onclick="switchTab('gmaps')">
+      <span class="tab-icon">🗺️</span>Maps
+    </button>
+  </div>
+
+  <!-- SCAN TAB -->
+  <div class="panel active" id="tab-scan">
+    <div class="mode-row">
+      <div class="mode-btn sel" id="mode-a4" onclick="setMode('a4')">
+        <div class="micon">📋</div>
+        <div class="mlabel">Аркуш А4</div>
+        <div class="msub">Весь список</div>
+      </div>
+      <div class="mode-btn" id="mode-lbl" onclick="setMode('label')">
+        <div class="micon">🏷️</div>
+        <div class="mlabel">Накладна</div>
+        <div class="msub">Одна адреса</div>
+      </div>
+    </div>
+
+    <div id="scan-zone-wrap">
+      <div class="scan-zone" onclick="document.getElementById('file-in').click()">
+        <div class="sicon" id="scan-icon">📋</div>
+        <div class="scan-hint" id="scan-hint">
+          <strong>Сфотографуй аркуш А4</strong><br>
+          AI прочитає всі адреси одразу
+          <span class="tip">Клади на рівну поверхню, добре освітлену</span>
+        </div>
+      </div>
+      <input type="file" id="file-in" accept="image/*" capture="environment" onchange="onFile(event)">
+    </div>
+
+    <div id="prev-wrap" class="preview-wrap" style="display:none">
+      <img id="prev-img" class="preview-img">
+      <button class="preview-clear" onclick="clearPhoto()">×</button>
+    </div>
+
+    <div id="load-row" class="loading-row" style="display:none">
+      <div class="spinner"></div>
+      <div class="loading-txt" id="load-txt">Читаю адреси...</div>
+    </div>
+
+    <div id="res-sec" style="display:none">
+      <div class="found-banner">
+        <div class="found-n" id="found-n">0</div>
+        <div class="found-lbl" id="found-lbl">адрес знайдено</div>
+      </div>
+      <div class="sel-row">
+        <button class="sel-btn" onclick="toggleAll()">Вибрати всі / зняти</button>
+        <span class="sel-count" id="sel-count">0 вибрано</span>
+      </div>
+      <div class="ext-list" id="ext-list"></div>
+      <button class="btn-green" id="btn-add-sel" onclick="addSelected()">Додати до маршруту</button>
+      <button class="btn-outline" onclick="clearPhoto()" style="margin-top:8px">Сканувати ще</button>
+    </div>
+
+    <div id="err-sec" style="display:none">
+      <div class="err-box">
+        <div class="err-label">Помилка розпізнавання</div>
+        <div class="err-msg" id="err-msg">Спробуй ще раз з кращим освітленням</div>
+      </div>
+      <button class="btn-outline" onclick="clearPhoto()">Спробувати знову</button>
+    </div>
+  </div>
+
+  <!-- MANUAL TAB -->
+  <div class="panel" id="tab-manual">
+    <div class="card">
+      <div class="label-sm">Одна адреса</div>
+      <div class="field-row">
+        <input class="field" id="man-field" placeholder="Via Roma 12, 20100 Milano" type="text" autocomplete="off">
+        <button class="btn-blue" onclick="addManual()">+</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="label-sm">Список (кожна адреса з нового рядка)</div>
+      <textarea class="field" id="paste-area" style="min-height:120px;resize:vertical;margin-bottom:10px" placeholder="Via Garibaldi 5, 00185 Roma&#10;Corso Italia 22, 10100 Torino&#10;Via Manzoni 8, 50121 Firenze"></textarea>
+      <button class="btn-outline" onclick="parseList()">Імпортувати список ↗</button>
+    </div>
+  </div>
+
+  <!-- ROUTE LIST TAB -->
+  <div class="panel" id="tab-route">
+    <div class="stats">
+      <div class="stat-card"><div class="stat-label">Всього</div><div class="stat-value" id="stat-tot">0</div></div>
+      <div class="stat-card"><div class="stat-label">Виконано</div><div class="stat-value" id="stat-don">0</div></div>
+      <div class="stat-card"><div class="stat-label">%</div><div class="stat-value" id="stat-pct">0</div></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    <div id="stops-list"></div>
+    <div id="empty-route" class="empty-hint">
+      <span class="eicon">📦</span>
+      Список порожній.<br>Сфотографуй аркуш А4 або<br>введи адреси вручну.
+    </div>
+    <button class="btn-red-outline" id="clear-btn" onclick="confirmClear()" style="display:none">🗑 Очистити весь список</button>
+  </div>
+
+  <!-- GOOGLE MAPS TAB -->
+  <div class="panel" id="tab-gmaps">
+    <div id="gmaps-empty" class="empty-hint">
+      <span class="eicon">🗺️</span>
+      Спочатку додай адреси —<br>тут з'являться блоки<br>для Google Maps
+    </div>
+    <div id="gmaps-content" style="display:none">
+      <div class="sort-info">
+        <strong>Як це працює:</strong> адреси відсортовані по вулицях, потім по номеру будинку — схожі адреси йдуть поряд. Блок по 9 зупинок — максимум для Google Maps. Натискай <strong>▶ Відкрити Maps</strong> — переходиш в Google Maps. Повертаєшся — тиснеш ✓ Виконано.
+      </div>
+      <div id="blocks-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────
+const STORAGE_KEY = 'sda_courier_v1';
+let stops = [];
+let doneBlocks = new Set();
+let extracted = [];
+let selected = new Set();
+let scanMode = 'a4';
+let openBlock = -1;
+let saveTimer = null;
+
+// ─── INIT ─────────────────────────────────────────────────
+function init() {
+  const d = new Date();
+  const days = ['нд','пн','вт','ср','чт','пт','сб'];
+  document.getElementById('date-sub').textContent = days[d.getDay()] + ', ' + d.toLocaleDateString('uk-UA');
+  loadFromStorage();
+  renderStops();
+  renderBlocks();
+  checkPWA();
+}
+
+// ─── STORAGE ──────────────────────────────────────────────
+function saveToStorage() {
+  const dot = document.getElementById('save-dot');
+  dot.classList.add('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        stops: stops,
+        doneBlocks: [...doneBlocks]
+      }));
+      dot.classList.remove('saving');
+    } catch(e) {}
+  }, 600);
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    stops = data.stops || [];
+    doneBlocks = new Set(data.doneBlocks || []);
+  } catch(e) { stops = []; doneBlocks = new Set(); }
+}
+
+// ─── TABS ─────────────────────────────────────────────────
+function switchTab(name) {
+  ['scan','manual','route','gmaps'].forEach((n,i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', n === name);
+    document.getElementById('tab-' + n).classList.toggle('active', n === name);
+  });
+  if (name === 'gmaps') renderBlocks();
+}
+
+// ─── SCAN MODE ────────────────────────────────────────────
+function setMode(m) {
+  scanMode = m;
+  document.getElementById('mode-a4').classList.toggle('sel', m === 'a4');
+  document.getElementById('mode-lbl').classList.toggle('sel', m === 'label');
+  if (m === 'a4') {
+    document.getElementById('scan-icon').textContent = '📋';
+    document.getElementById('scan-hint').innerHTML = '<strong>Сфотографуй аркуш А4</strong><br>AI прочитає всі адреси одразу<span class="tip">Клади на рівну поверхню, добре освітлену</span>';
+  } else {
+    document.getElementById('scan-icon').textContent = '🏷️';
+    document.getElementById('scan-hint').innerHTML = '<strong>Сфотографуй накладну</strong><br>Одна адреса з повними даними<span class="tip">Наводь камеру прямо на етикетку</span>';
+  }
+}
+
+// ─── FILE HANDLING ────────────────────────────────────────
+function onFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const b64 = ev.target.result.split(',')[1];
+    document.getElementById('prev-img').src = ev.target.result;
+    document.getElementById('prev-wrap').style.display = 'block';
+    document.getElementById('scan-zone-wrap').style.display = 'none';
+    document.getElementById('res-sec').style.display = 'none';
+    document.getElementById('err-sec').style.display = 'none';
+    scanMode === 'a4' ? extractA4(b64) : extractLabel(b64);
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function clearPhoto() {
+  extracted = []; selected.clear();
+  document.getElementById('prev-wrap').style.display = 'none';
+  document.getElementById('scan-zone-wrap').style.display = 'block';
+  document.getElementById('load-row').style.display = 'none';
+  document.getElementById('res-sec').style.display = 'none';
+  document.getElementById('err-sec').style.display = 'none';
+}
+
+// ─── AI EXTRACTION ────────────────────────────────────────
+async function extractA4(b64) {
+  document.getElementById('load-row').style.display = 'flex';
+  document.getElementById('load-txt').textContent = 'Читаю список адрес...';
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+          { type: 'text', text: `Foglio A4 con elenco indirizzi di consegna SDA in Italia. Estrai TUTTI gli indirizzi presenti nel documento.
+Rispondi SOLO con un array JSON valido, senza markdown, senza testo aggiuntivo:
+[{"nome":"Nome Cognome","indirizzo_completo":"Via X N, CAP Città","nota":null}]
+Se non riesci a leggere qualcosa, metti stringa vuota. Estrai davvero TUTTI gli indirizzi che vedi.` }
+        ]}]
+      })
+    });
+    const data = await resp.json();
+    document.getElementById('load-row').style.display = 'none';
+    const raw = data.content.map(b => b.text || '').join('').trim();
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    extracted = Array.isArray(parsed) ? parsed : [parsed];
+    selected = new Set(extracted.map((_, i) => i));
+    showExtracted();
+  } catch(e) {
+    document.getElementById('load-row').style.display = 'none';
+    document.getElementById('err-msg').textContent = 'Не вдалося прочитати список. Спробуй з кращим освітленням або тримай аркуш рівніше.';
+    document.getElementById('err-sec').style.display = 'block';
+  }
+}
+
+async function extractLabel(b64) {
+  document.getElementById('load-row').style.display = 'flex';
+  document.getElementById('load-txt').textContent = 'Читаю накладну...';
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+          { type: 'text', text: 'Etichetta SDA. JSON solo, no markdown: {"nome":"...","indirizzo_completo":"Via X N, CAP Città","nota":null}' }
+        ]}]
+      })
+    });
+    const data = await resp.json();
+    document.getElementById('load-row').style.display = 'none';
+    const raw = data.content.map(b => b.text || '').join('').trim();
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    extracted = [parsed];
+    selected = new Set([0]);
+    showExtracted();
+  } catch(e) {
+    document.getElementById('load-row').style.display = 'none';
+    document.getElementById('err-msg').textContent = 'Не вдалося прочитати накладну.';
+    document.getElementById('err-sec').style.display = 'block';
+  }
+}
+
+function showExtracted() {
+  document.getElementById('found-n').textContent = extracted.length;
+  document.getElementById('found-lbl').textContent = extracted.length === 1 ? 'адресу знайдено' : 'адрес знайдено';
+  renderExtracted();
+  document.getElementById('res-sec').style.display = 'block';
+}
+
+function renderExtracted() {
+  const sc = selected.size;
+  document.getElementById('sel-count').textContent = sc + ' вибрано';
+  const btn = document.getElementById('btn-add-sel');
+  btn.disabled = sc === 0;
+  btn.textContent = sc > 0 ? ('Додати ' + sc + ' адрес до маршруту') : 'Вибери адреси';
+  document.getElementById('ext-list').innerHTML = extracted.map((item, i) => {
+    const s = selected.has(i);
+    return `<div class="ext-item ${s ? 'sel' : ''}" onclick="toggleItem(${i})">
+      <div class="ext-check ${s ? 'chk' : ''}">${s ? '✓' : ''}</div>
+      <div>
+        <div class="ext-addr">${item.indirizzo_completo || '—'}</div>
+        ${item.nome ? '<div class="ext-name">' + item.nome + '</div>' : ''}
+        ${item.nota ? '<div class="ext-name" style="color:#e24b4a">📝 ' + item.nota + '</div>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleItem(i) {
+  selected.has(i) ? selected.delete(i) : selected.add(i);
+  renderExtracted();
+}
+
+function toggleAll() {
+  if (selected.size === extracted.length) selected.clear();
+  else extracted.forEach((_, i) => selected.add(i));
+  renderExtracted();
+}
+
+function normalizeAddr(addr) {
+  return addr.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function addSelected() {
+  let count = 0;
+  extracted.forEach((item, i) => {
+    if (!selected.has(i)) return;
+    const addr = item.indirizzo_completo || '';
+    const normAddr = normalizeAddr(addr);
+    const person = { name: item.nome || null, nota: item.nota || null };
+    const existing = stops.find(s => normalizeAddr(s.addr) === normAddr && !s.done);
+    if (existing) {
+      if (!existing.people) {
+        existing.people = [{ name: existing.name, nota: existing.nota }];
+        existing.name = null;
+      }
+      existing.people.push(person);
+    } else {
+      stops.push({ addr, name: item.nome || null, nota: item.nota || null, people: null, done: false });
+      count++;
+    }
+  });
+  doneBlocks.clear();
+  saveToStorage();
+  renderStops();
+  showToast('Додано ' + count + ' зупинок ✓');
+  clearPhoto();
+  switchTab('gmaps');
+}
+
+// ─── MANUAL ───────────────────────────────────────────────
+function addManual() {
+  const f = document.getElementById('man-field');
+  const val = f.value.trim();
+  if (!val) return;
+  stops.push({ addr: val, done: false });
+  f.value = '';
+  doneBlocks.clear();
+  saveToStorage();
+  renderStops();
+  showToast('Додано ✓');
+}
+
+document.getElementById('man-field').addEventListener('keydown', e => { if (e.key === 'Enter') addManual(); });
+
+function parseList() {
+  const lines = document.getElementById('paste-area').value.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return;
+  lines.forEach(l => stops.push({ addr: l, done: false }));
+  document.getElementById('paste-area').value = '';
+  doneBlocks.clear();
+  saveToStorage();
+  renderStops();
+  showToast('Додано ' + lines.length + ' адрес ✓');
+  switchTab('gmaps');
+}
+
+// ─── STOPS LIST ───────────────────────────────────────────
+function markDone(i) {
+  stops[i].done = !stops[i].done;
+  saveToStorage();
+  renderStops();
+  renderBlocks();
+}
+
+function delStop(i) {
+  stops.splice(i, 1);
+  doneBlocks.clear();
+  saveToStorage();
+  renderStops();
+  renderBlocks();
+}
+
+function confirmClear() {
+  if (confirm('Видалити весь список? Це скасувати не можна.')) {
+    stops = [];
+    doneBlocks.clear();
+    saveToStorage();
+    renderStops();
+    renderBlocks();
+    showToast('Список очищено');
+  }
+}
+
+function peopleHtml(s, small) {
+  const fs = small ? '11px' : '12px';
+  if (s.people && s.people.length > 0) {
+    return s.people.map(p =>
+      `<div style="font-size:${fs};color:#8e8e93;margin-top:2px">👤 ${p.name || '—'}${p.nota ? ' · <span style="color:#e24b4a">📝 ' + p.nota + '</span>' : ''}</div>`
+    ).join('');
+  }
+  if (s.name) return `<div style="font-size:${fs};color:#8e8e93;margin-top:2px">👤 ${s.name}${s.nota ? ' · <span style="color:#e24b4a">📝 ' + s.nota + '</span>' : ''}</div>`;
+  return '';
+}
+
+function renderStops() {
+  const tot = stops.length;
+  const don = stops.filter(s => s.done).length;
+  const pct = tot ? Math.round(don / tot * 100) : 0;
+  document.getElementById('stat-tot').textContent = tot;
+  document.getElementById('stat-don').textContent = don;
+  document.getElementById('stat-pct').textContent = pct;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('empty-route').style.display = tot > 0 ? 'none' : 'block';
+  document.getElementById('clear-btn').style.display = tot > 0 ? 'block' : 'none';
+
+  const list = document.getElementById('stops-list');
+  list.innerHTML = stops.map((s, i) => `
+    <div class="stop-item" style="${s.done ? 'opacity:0.45' : ''}">
+      <div class="stop-num ${s.done ? 'done-num' : ''}">${s.done ? '✓' : (i + 1)}</div>
+      <div class="stop-info">
+        <div class="stop-addr" style="${s.done ? 'text-decoration:line-through;color:#8e8e93' : ''}">${s.addr}</div>
+        ${peopleHtml(s, false)}
+      </div>
+      <button class="stop-done-btn" onclick="markDone(${i})">${s.done ? '↩' : '✓'}</button>
+      <button class="stop-del" onclick="delStop(${i})">×</button>
+    </div>`).join('');
+}
+
+// ─── SORTING & BLOCKS ─────────────────────────────────────
+function extractStreet(addr) {
+  const m = addr.match(/^(via|corso|piazza|viale|vicolo|largo|borgo|strada|lungotevere|lungarno|piazzale)\s+([\w\s]+)/i);
+  if (m) return (m[1] + ' ' + m[2]).toLowerCase().trim();
+  return addr.toLowerCase().split(',')[0].trim();
+}
+
+function extractNum(addr) {
+  const m = addr.match(/\b(\d+)/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function getSortedPending() {
+  return stops
+    .filter(s => !s.done)
+    .slice()
+    .sort((a, b) => {
+      const sa = extractStreet(a.addr), sb = extractStreet(b.addr);
+      if (sa < sb) return -1;
+      if (sa > sb) return 1;
+      return extractNum(a.addr) - extractNum(b.addr);
+    });
+}
+
+function getBlocks() {
+  const sorted = getSortedPending();
+  const blocks = [];
+  for (let i = 0; i < sorted.length; i += 9) blocks.push(sorted.slice(i, i + 9));
+  return blocks;
+}
+
+function openBlockMaps(bi) {
+  const blocks = getBlocks();
+  const block = blocks[bi];
+  if (!block || !block.length) return;
+
+  const addrs = block.map(s => encodeURIComponent(s.addr));
+
+  // спробуємо відкрити нативний додаток Google Maps через URL scheme
+  // comgooglemaps:// підтримує waypoints тільки через daddr + waypoints
+  // для більше 2 точок використовуємо окремий формат
+  if (block.length === 1) {
+    const native = 'comgooglemaps://?daddr=' + addrs[0] + '&directionsmode=driving';
+    const web = 'https://www.google.com/maps/dir/' + addrs[0];
+    tryOpenNative(native, web);
+  } else {
+    const origin = addrs[0];
+    const dest = addrs[addrs.length - 1];
+    const waypoints = addrs.slice(1, -1).join('|');
+    const native = 'comgooglemaps://?saddr=' + origin + '&daddr=' + dest
+      + (waypoints ? '&waypoints=' + waypoints : '')
+      + '&directionsmode=driving';
+    const web = 'https://www.google.com/maps/dir/' + addrs.join('/');
+    tryOpenNative(native, web);
+  }
+}
+
+function tryOpenNative(nativeUrl, webUrl) {
+  // на iPhone Safari: пробуємо нативну схему, якщо не спрацює — відкриваємо веб
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+
+  let opened = false;
+  const timer = setTimeout(() => {
+    if (!opened) window.open(webUrl, '_blank');
+    document.body.removeChild(iframe);
+  }, 600);
+
+  window.addEventListener('blur', function onBlur() {
+    opened = true;
+    clearTimeout(timer);
+    document.body.removeChild(iframe);
+    window.removeEventListener('blur', onBlur);
+  }, { once: true });
+
+  iframe.src = nativeUrl;
+}
+
+function toggleBlockDone(bi) {
+  if (doneBlocks.has(bi)) doneBlocks.delete(bi);
+  else doneBlocks.add(bi);
+  saveToStorage();
+  renderBlocks();
+}
+
+function toggleBlockOpen(bi) {
+  openBlock = openBlock === bi ? -1 : bi;
+  renderBlocks();
+}
+
+function renderBlocks() {
+  const blocks = getBlocks();
+  const empty = document.getElementById('gmaps-empty');
+  const content = document.getElementById('gmaps-content');
+  const wrap = document.getElementById('blocks-wrap');
+
+  if (stops.length === 0) {
+    empty.style.display = 'block';
+    content.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  content.style.display = 'block';
+
+  if (blocks.length === 0) {
+    wrap.innerHTML = '<div class="empty-hint" style="padding:20px"><span class="eicon">🎉</span>Всі доставки виконано!</div>';
+    return;
+  }
+
+  // знайти перший не виконаний блок
+  const firstPending = blocks.findIndex((_, i) => !doneBlocks.has(i));
+
+  wrap.innerHTML = blocks.map((block, bi) => {
+    const isDone = doneBlocks.has(bi);
+    const isNext = bi === firstPending;
+    const isOpen = openBlock === bi;
+    const streets = [...new Set(block.map(s => extractStreet(s.addr)))];
+    const streetLabel = streets.slice(0, 2).map(s =>
+      s.replace(/^(via|corso|piazza|viale|vicolo|largo)\s+/i, '')
+        .split(' ').slice(0, 2).join(' ')
+    ).join(', ') + (streets.length > 2 ? '...' : '');
+
+    let circleClass = isDone ? 'done' : (isNext ? 'next' : '');
+    let circleContent = isDone ? '✓' : (bi + 1);
+
+    return `<div class="block-item ${isDone ? 'done-block' : ''} ${isNext ? 'current-block' : ''}">
+      <div class="block-head" onclick="toggleBlockOpen(${bi})">
+        <div class="block-circle ${circleClass}">${circleContent}</div>
+        <div class="block-text">
+          <div class="block-title">Блок ${bi + 1} · ${block.length} зупинок</div>
+          <div class="block-sub">${streetLabel}</div>
+        </div>
+        <button class="btn-maps ${isDone ? 'done' : ''}" onclick="event.stopPropagation(); openBlockMaps(${bi})">
+          ${isDone ? '↗ Ще раз' : '▶ Maps'}
+        </button>
+      </div>
+      <div class="block-body ${isOpen ? 'open' : ''}">
+        ${block.map((s, si) => `<div class="block-stop-row"><span class="bsnum">${si + 1}.</span><div>${s.addr}${peopleHtml(s, true)}</div></div>`).join('')}
+        <div class="block-actions">
+          <button class="btn-done-block ${isDone ? 'active-done' : ''}" onclick="toggleBlockDone(${bi})">
+            ${isDone ? '↩ Відновити' : '✓ Виконано'}
+          </button>
+          <button class="btn-open-maps" onclick="openBlockMaps(${bi})">▶ Відкрити Maps</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── TOAST ────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── TELEGRAM BACKUP ──────────────────────────────────────
+const N8N_WEBHOOK = 'https://gently-nurture-unkind.ngrok-free.dev/webhook/sda-courier-bot';
+const MY_CHAT_ID = '238152499';
+const BOT_TOKEN = '7546935502:AAFqTo-GL75-wkcIeSI3Y7e8RUUdf8KxENg';
+
+async function sendToTelegram() {
+  if (stops.length === 0) { showToast('Список порожній'); return; }
+
+  const btn = document.getElementById('tg-btn');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+  try {
+    // Надсилаємо JSON зі списком напряму через Telegram Bot API
+    const stopsJson = JSON.stringify(stops);
+    const text = 'SAVE:' + stopsJson;
+
+    const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: MY_CHAT_ID,
+        text: text
+      })
+    });
+
+    const data = await resp.json();
+    if (data.ok) {
+      showToast('✅ Збережено в Telegram!');
+      if (btn) { btn.textContent = '✅'; btn.disabled = false; setTimeout(() => { btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.012 9.478c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L6.26 14.4l-2.95-.924c-.64-.203-.654-.64.136-.948l11.526-4.443c.537-.194 1.006.131.59.163z"/></svg> 💾'; }, 2000); }
+    } else {
+      throw new Error(data.description);
+    }
+  } catch(e) {
+    showToast('❌ Помилка: ' + (e.message || 'спробуй ще'));
+    if (btn) { btn.textContent = '💾'; btn.disabled = false; }
+  }
+}
+
+async function restoreFromTelegram() {
+  showToast('⏳ Завантажую з Telegram...');
+  try {
+    // отримуємо останні повідомлення бота собі
+    const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=50&offset=-50`);
+    const data = await resp.json();
+    if (!data.ok) throw new Error('Помилка API');
+
+    // шукаємо останнє RESTORE: повідомлення
+    const updates = data.result.reverse();
+    let found = null;
+    for (const upd of updates) {
+      const text = upd.message?.text || '';
+      if (text.startsWith('RESTORE:')) {
+        found = text.substring(8);
+        break;
+      }
+      // або шукаємо SAVE: яке ми самі надіслали
+      if (text.startsWith('SAVE:')) {
+        found = text.substring(5);
+        break;
+      }
+    }
+
+    if (!found) {
+      showToast('📭 Немає збереженого списку');
+      return;
+    }
+
+    const restored = JSON.parse(found);
+    if (confirm(`Відновити ${restored.length} адрес з Telegram? Поточний список буде замінено.`)) {
+      stops = restored;
+      doneBlocks.clear();
+      saveToStorage();
+      renderStops();
+      renderBlocks();
+      showToast('✅ Список відновлено!');
+      switchTab('route');
+    }
+  } catch(e) {
+    showToast('❌ Помилка відновлення');
+  }
+}
+
+// ─── PWA INSTALL BANNER ───────────────────────────────────
+function checkPWA() {
+  const isStandalone = window.navigator.standalone;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (isIOS && !isStandalone) {
+    const banner = document.createElement('div');
+    banner.id = 'pwa-banner';
+    banner.style.cssText = 'background:#1c1c1e;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13px;line-height:1.4;';
+    banner.innerHTML = `
+      <span style="font-size:24px">📲</span>
+      <span style="flex:1"><strong>Додай на головний екран</strong><br>Натисни <strong>⬆ Поділитись</strong> → "На екран"<br><span style="font-size:11px;opacity:0.7">Так додаток не закриється при перегріві</span></span>
+      <button onclick="document.getElementById('pwa-banner').remove()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:0 4px;opacity:0.7">×</button>`;
+    document.querySelector('.app').prepend(banner);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
